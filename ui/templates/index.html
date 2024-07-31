@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wordle RL</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"></script>
+    <style>
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+        .cell {
+            width: 50px;
+            height: 50px;
+            border: 1px solid #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .correct { background-color: #6aaa64; }
+        .present { background-color: #c9b458; }
+        .absent { background-color: #787c7e; }
+    </style>
+</head>
+<body>
+    <h1>Wordle RL</h1>
+    <div id="game-board"></div>
+    <button onclick="playAI()">AI Play</button>
+    <button onclick="resetGame()">Reset Game</button>
+
+    <script>
+        let currentState = [];
+
+        function updateBoard(word, state) {
+            const board = document.getElementById('game-board');
+            const row = document.createElement('div');
+            row.className = 'grid';
+            
+            for (let i = 0; i < 5; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.textContent = word[i];
+                
+                if (state[i*3 + 2] === 1) cell.classList.add('correct');
+                else if (state[i*3 + 1] === 1) cell.classList.add('present');
+                else cell.classList.add('absent');
+                
+                row.appendChild(cell);
+            }
+            
+            board.appendChild(row);
+        }
+
+        async function playAI() {
+            const response = await axios.post('/play', { action: 'ai', state: currentState });
+            const { state, word, done, target_word } = response.data;
+            
+            updateBoard(word, state);
+            currentState = state;
+            
+            if (done) {
+                alert(`Game Over! The word was: ${target_word}`);
+            }
+        }
+
+        async function resetGame() {
+            const response = await axios.post('/reset');
+            currentState = response.data.state;
+            document.getElementById('game-board').innerHTML = '';
+        }
+
+        // Initialize the game
+        resetGame();
+    </script>
+</body>
+</html>
